@@ -1,0 +1,30 @@
+name: Bot watchdog
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  bot-is-quiet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Is the bot still sending news?
+        env:
+          DATA: https://gist.githubusercontent.com/kriphashankarthepentacost/5eb185870e7898c4a4c5c0b71702bf97/raw/data.json
+        run: |
+          python3 - <<'EOF'
+          import json, os, time, urllib.request
+          url = os.environ["DATA"] + "?t=" + str(int(time.time()))
+          d = json.load(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "watchdog"}), timeout=30))
+          if d.get("stopped") or d.get("state") == "DEAD":
+              print("Sharing is off or the bot has died: nothing to watch."); raise SystemExit
+          age = (time.time() - d.get("now", 0)) / 60
+          print(f"Last news from the bot: {age:.0f} minutes ago")
+          now = time.gmtime()
+          if age < 20 or not (age < 50 or (now.tm_hour % 6 == 0 and now.tm_min < 30)):
+              raise SystemExit
+          print(f"::error::No news from the bot for {age:.0f} minutes (last equity ${d.get('equity', 0):,.2f}). "
+                "Android probably closed Termux. Open Termux and run: bash ~/solana-dex-bot/phone/start.sh")
+          raise SystemExit(1)
+          EOF
