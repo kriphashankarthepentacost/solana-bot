@@ -416,6 +416,7 @@ function scanner(name) {
     const orders = Object.entries(data.sweep_orders || {}).map(([c, o]) => `<li>${o.side === "long" ? "Buy" : "Sell short"} <b>${esc(c)}</b> at ${price(o.entry)} (${esc(o.array)}), stop ${price(o.stop)}, target ${price(o.target)} · expires ${ago(2 * Date.now() / 1000 - o.expires).replace(" ago", "").replace("just now", "soon")}</li>`).join("");
     return {busy: !!orders, at: data.sweep_coins && data.sweep_coins.at,
       html: `<p>Coins passing your filters today: <b>${coins.length ? coins.map(esc).join(", ") : "none yet"}</b>.</p>` +
+        ((data.sweep_coins && data.sweep_coins.extra || []).length ? `<p>Also traded (extra list): ${data.sweep_coins.extra.map(esc).join(", ")}.</p>` : "") +
         (orders ? `<p>Waiting entry orders:</p><ul>${orders}</ul>` : `<p>No entry order waiting. It waits for a liquidity sweep and a shift in structure.</p>`)};
   }
   if (name === "arbitrage" && a) {
