@@ -17,12 +17,14 @@ jobs:
           import json, os, time, urllib.request
           url = os.environ["DATA"] + "?t=" + str(int(time.time()))
           d = json.load(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "watchdog"}), timeout=30))
-          if d.get("stopped") or d.get("state") == "DEAD":
-              print("Sharing is off or the bot has died: nothing to watch."); raise SystemExit
+          if d.get("state") == "DEAD":
+              print("The bot has died: nothing to watch."); raise SystemExit
+          if d.get("stopped"):
+              print("::warning::Sharing is off (/unshare), so the watchdog can't see the bot. Send /share to turn it on.")
+              raise SystemExit
           age = (time.time() - d.get("now", 0)) / 60
           print(f"Last news from the bot: {age:.0f} minutes ago")
-          now = time.gmtime()
-          if age < 20 or not (age < 50 or (now.tm_hour % 6 == 0 and now.tm_min < 30)):
+          if age < 20:
               raise SystemExit
           print(f"::error::No news from the bot for {age:.0f} minutes (last equity ${d.get('equity', 0):,.2f}). "
                 "Android probably closed Termux. Open Termux and run: bash ~/solana-dex-bot/phone/start.sh")
