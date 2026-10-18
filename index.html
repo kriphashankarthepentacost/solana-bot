@@ -282,6 +282,18 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
+    <h2>Every trade, one by one</h2>
+    <p class="sub" id="rtSummary">Each trade from buy to sell: the price in, the price out, and what it made or lost. Open trades are on top with their result right now.</p>
+    <div class="filters">
+      <select id="rtCoin" aria-label="Coin"></select>
+      <select id="rtStatus" aria-label="Status">
+        <option value="">Open and closed</option><option value="open">Open now</option><option value="closed">Closed</option>
+      </select>
+    </div>
+    <div id="roundTrips"></div>
+  </section>
+
+  <section class="card reveal span-2">
     <h2>Trade history</h2>
     <p class="sub" id="tradeSummary"></p>
     <div class="filters">
@@ -491,6 +503,8 @@ function render(d) {
   const winRate = d.closed_count ? Math.round(d.wins / d.closed_count * 100) + "% made money" : "none closed yet";
   $("tradeSummary").textContent = `${d.trades.length} trades, ${d.closed_count} closed (${winRate}). Tap a coin for its live chart.`;
   renderTrades();
+  fillSelect("rtCoin", "All coins", [...new Set((d.round_trips || []).map(r => r.symbol))], s => s);
+  renderRoundTrips();
 
   drawDaily();
   drawHist();
@@ -617,7 +631,8 @@ function renderBrain() {
 }
 
 function renderFeed() {
-  const items = ["perps", "pumpfun", "sniper", "arbitrage"].map(n => ({n, s: scanner(n)})).filter(x => x.s);
+  const on = new Set(data.strategies.filter(s => s.enabled).map(s => s.name));
+  const items = ["perps", "pumpfun", "sniper", "arbitrage"].filter(n => on.has(n)).map(n => ({n, s: scanner(n)})).filter(x => x.s);
   $("feed").innerHTML = items.length ? items.map(({n, s}) => `<div class="act ${s.busy ? "busy" : ""}"><span class="sw" style="background:${scolor(n)}"></span>
     <div><b>${esc(NAMES[n])}</b> <span class="small">${s.at ? "· " + ago(s.at) : ""}</span>${s.html}</div></div>`).join("")
     : `<p class="empty">Nothing yet. The scanners report here after their first check.</p>`;
@@ -658,6 +673,31 @@ function renderTrades() {
   if ($("moreBtn")) $("moreBtn").onclick = () => { shown += 50; renderTrades(); };
 }
 ["fStrat", "fToken", "fSide"].forEach(id => $(id).addEventListener("change", () => { shown = 30; renderTrades(); }));
+
+let rtShown = 25;
+function renderRoundTrips() {
+  const all = data.round_trips || [];
+  const fc = $("rtCoin").value, fs = $("rtStatus").value;
+  const list = all.filter(r => (!fc || r.symbol === fc) && (!fs || r.status === fs));
+  const closed = all.filter(r => r.status === "closed"), won = closed.filter(r => r.pnl > 0);
+  const total = closed.reduce((a, r) => a + r.pnl, 0), open = all.filter(r => r.status === "open");
+  $("rtSummary").innerHTML = closed.length || open.length
+    ? `${closed.length} closed: <b>${won.length} won, ${closed.length - won.length} lost</b>, together <span class="${plClass(total)}">${usd(total, true)}</span>` +
+      (open.length ? ` · ${open.length} open now: <span class="${plClass(open.reduce((a, r) => a + r.pnl, 0))}">${usd(open.reduce((a, r) => a + r.pnl, 0), true)}</span> if sold now` : "")
+    : "Each trade from buy to sell will appear here.";
+  if (!list.length) { $("roundTrips").innerHTML = `<p class="empty">${all.length ? "No trades match." : "No trades yet."}</p>`; return; }
+  const sideTag = r => r.side === "short" ? `<span class="tag">short</span>` : r.side === "arbitrage" ? `<span class="tag">arbitrage</span>` : "";
+  $("roundTrips").innerHTML = `<div class="tablewrap"><table><tr><th>Trade</th><th class="num">Bought → sold</th><th class="num">Result</th></tr>` +
+    list.slice(0, rtShown).map(r => `<tr>
+      <td>${coin(r.symbol)} ${sideTag(r)}${r.status === "open" ? `<span class="tag">open</span>` : ""}
+        <div class="small">${swatch(r.strategy)} ${esc(NAMES[r.strategy] || r.strategy)} · ${r.opened ? when(r.opened) : "?"} → ${r.closed ? when(r.closed) : "now"} · held ${hours(r.held_h)}</div>
+        <div class="small">${esc(r.status === "open" ? (r.stop ? "stop " + price(r.stop) : "") + (r.target ? " · target " + price(r.target) : "") : r.reason)}</div></td>
+      <td class="num">${price(r.entry)}<div class="small">→ ${price(r.exit)}${r.status === "open" ? " now" : ""}</div></td>
+      <td class="num"><span class="${plClass(r.pnl)}">${usd(r.pnl, true)}</span><div class="small ${plClass(r.pnl)}">${pct(r.pct)}</div></td></tr>`).join("") +
+    `</table></div>` + (list.length > rtShown ? `<button class="chip more" type="button" id="rtMore">Show more (${list.length - rtShown} older)</button>` : "");
+  if ($("rtMore")) $("rtMore").onclick = () => { rtShown += 25; renderRoundTrips(); };
+}
+["rtCoin", "rtStatus"].forEach(id => $(id).addEventListener("change", () => { rtShown = 25; renderRoundTrips(); }));
 
 // ---------- charts ----------
 function rangedHistory() {
