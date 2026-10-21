@@ -260,6 +260,13 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
+    <h2>Money plan</h2>
+    <p class="sub">The bot sizes everything to the money it really has and the most you accept to lose. Change the limit in Telegram: <code>/money 200</code>.</p>
+    <div class="tiles" id="moneyTiles"></div>
+    <div class="tablewrap" id="moneyTable" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card reveal span-2">
     <h2>The brain</h2>
     <p class="sub">Decisions above the single strategies: the market's mood, which strategies are resting, and the bot's chance of a big loss in the next 30 days (from thousands of simulated futures).</p>
     <div class="tiles" id="brainTiles"></div>
@@ -494,6 +501,7 @@ function render(d) {
   drawDrawdown();
   drawFlow();
   renderStrategies();
+  renderMoney();
   renderBrain();
   renderFeed();
   renderPositions();
@@ -593,6 +601,25 @@ function renderStrategies() {
       <p class="note">${esc(s.explain)}</p>${extra}${scan ? `<div class="note">${scan.html}</div>` : ""}</details>`;
   }).join("");
   requestAnimationFrame(() => $("strats").querySelectorAll(".meter span").forEach(m => m.style.width = m.dataset.w + "%"));
+}
+
+function renderMoney() {
+  const p = data.money_plan;
+  if (!p) { $("moneyTiles").innerHTML = ""; $("moneyTable").innerHTML = `<p class="empty">The money plan appears after the bot's first check.</p>`; return; }
+  const usedPct = p.max_loss ? p.loss_used / p.max_loss : 0;
+  const mode = p.paused ? `<span style="color:var(--critical)">paused: limit reached</span>` : p.scale < 1 ? `careful: ${Math.round(p.scale * 100)}% size` : "normal";
+  $("moneyTiles").innerHTML = [
+    ["Start money", usd(p.start)], ["Money now", usd(p.equity)],
+    ["Max loss you allow", usd(p.max_loss)], ["Loss left before pause", `${usd(p.loss_left)} <span class="small">(${Math.round(usedPct * 100)}% used)</span>`],
+    ["Trading mode", mode], ["One losing trade costs at most", p.risk_cap_usd == null ? "–" : usd(p.risk_cap_usd)],
+  ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value" style="font-size:15px">${v}</div></div>`).join("");
+  const rows = Object.entries(p.strategies).filter(([n, s]) => s.on || s.reason !== "switched off in config.yaml");
+  const size = s => s.levels ? `${s.levels} steps of ${usd(s.lot_usd)}` : s.symbols ? `${s.symbols.map(esc).join(", ")} · ~${usd(s.trade_usd)} a trade`
+    : s.trade_usd ? `~${usd(s.trade_usd)} a trade` : "";
+  $("moneyTable").innerHTML = `<table><tr><th>Strategy</th><th class="num">Money</th><th style="padding-left:18px">With this much money</th></tr>` +
+    rows.map(([n, s]) => `<tr><td><span class="side">${swatch(n)}${esc(NAMES[n] || n)}</span>${s.on ? "" : `<span class="tag">off</span>`}</td>
+      <td class="num">${s.on ? `${Math.round(s.share * 100)}% · ${usd(s.money || 0)}` : "–"}</td>
+      <td class="small" style="padding-left:18px">${s.on ? size(s) : esc(s.reason)}</td></tr>`).join("") + `</table>`;
 }
 
 function renderBrain() {
