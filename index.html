@@ -267,6 +267,13 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
+    <h2>What the bot learned</h2>
+    <p class="sub">Once a week the bot reviews its own results. It changes nothing by itself: each idea comes as a proposal with proof, and you decide in Telegram (<code>/approve 3</code>, <code>/reject 3</code>, <code>/undo 3</code>).</p>
+    <div id="learnReport" class="small"></div>
+    <div class="tablewrap" id="learnTable" style="margin-top:10px"></div>
+  </section>
+
+  <section class="card reveal span-2">
     <h2>The brain</h2>
     <p class="sub">Decisions above the single strategies: the market's mood, which strategies are resting, and the bot's chance of a big loss in the next 30 days (from thousands of simulated futures).</p>
     <div class="tiles" id="brainTiles"></div>
@@ -502,6 +509,7 @@ function render(d) {
   drawFlow();
   renderStrategies();
   renderMoney();
+  renderLearning();
   renderBrain();
   renderFeed();
   renderPositions();
@@ -620,6 +628,21 @@ function renderMoney() {
     rows.map(([n, s]) => `<tr><td><span class="side">${swatch(n)}${esc(NAMES[n] || n)}</span>${s.on ? "" : `<span class="tag">off</span>`}</td>
       <td class="num">${s.on ? `${Math.round(s.share * 100)}% · ${usd(s.money || 0)}` : "–"}</td>
       <td class="small" style="padding-left:18px">${s.on ? size(s) : esc(s.reason)}</td></tr>`).join("") + `</table>`;
+}
+
+function renderLearning() {
+  const l = data.learning;
+  if (!l) { $("learnReport").innerHTML = `<p class="empty">Self-review starts after the next update.</p>`; $("learnTable").innerHTML = ""; return; }
+  const r = l.report, next = l.next ? new Date(l.next * 1000).toLocaleString() : "–";
+  $("learnReport").innerHTML = (r ? `<p><b>Last review ${ago(r.at)}:</b></p><ul>${r.findings.map(f => `<li>${esc(f)}</li>`).join("")}</ul>`
+    : `<p>No review yet.</p>`) + `<p>Next review: ${esc(next)}</p>`;
+  const tag = s => ({open: "waiting for you", approved: "approved", rejected: "rejected", undone: "undone"}[s] || s);
+  const name = p => esc((p.path[0] === "strategies" ? p.path.slice(1) : p.path).join("."));
+  $("learnTable").innerHTML = l.proposals.length ? `<table><tr><th>Proposal</th><th>Change</th><th>Status</th></tr>` +
+    l.proposals.map(p => `<tr><td>#${p.id} ${name(p)}<div class="small">${esc(p.why)}</div><div class="small">${esc(p.proof)}</div></td>
+      <td class="num">${esc(String(p.old))} → <b>${esc(String(p.new))}</b></td>
+      <td><span class="tag">${tag(p.status)}</span></td></tr>`).join("") + `</table>`
+    : `<p class="empty">No proposals yet. It needs about 30 finished trades per strategy before it can judge anything.</p>`;
 }
 
 function renderBrain() {
