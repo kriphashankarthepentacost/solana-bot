@@ -267,6 +267,16 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
+    <h2>Practice scalper</h2>
+    <p class="sub">Your micro-sweep idea on 5-minute charts across the 150 most-traded altcoins on Hyperliquid and Bybit (cheapest venue first). It trades its own pretend $1,000 (not the bot's money) to prove itself live first.</p>
+    <div class="tiles" id="scalpTiles"></div>
+    <div class="tablewrap" id="scalpTable" style="margin-top:10px"></div>
+    <h3 style="margin-top:16px">Coin scanner</h3>
+    <p class="sub" id="scanSub">Every watched coin, checked every 5 minutes: EMA 20/30/50 trend on the 1-hour and 5-minute charts, and how close price is to its 4-hour high or low (where a sweep setup can form).</p>
+    <div class="tablewrap" id="scanTable"></div>
+  </section>
+
+  <section class="card reveal span-2">
     <h2>Risk radar</h2>
     <p class="sub">Every hour the bot reads the whole market and its own form, and decides how much risk to take. It changes the size of new trades by itself and goes back to normal by itself; open trades always keep their stop-losses.</p>
     <div class="tiles" id="radarTiles"></div>
@@ -519,6 +529,7 @@ function render(d) {
   drawFlow();
   renderStrategies();
   renderMoney();
+  renderScalper();
   renderRadar();
   renderLearning();
   renderBrain();
@@ -639,6 +650,27 @@ function renderMoney() {
     rows.map(([n, s]) => `<tr><td><span class="side">${swatch(n)}${esc(NAMES[n] || n)}</span>${s.on ? "" : `<span class="tag">off</span>`}</td>
       <td class="num">${s.on ? `${Math.round(s.share * 100)}% · ${usd(s.money || 0)}` : "–"}</td>
       <td class="small" style="padding-left:18px">${s.on ? size(s) : esc(s.reason)}</td></tr>`).join("") + `</table>`;
+}
+
+function renderScalper() {
+  const s = data.scalper;
+  if (!s) { $("scalpTiles").innerHTML = ""; $("scalpTable").innerHTML = `<p class="empty">The practice scalper starts after the next update.</p>`; return; }
+  const change = s.equity - s.start;
+  $("scalpTiles").innerHTML = [
+    ["Practice money", usd(s.equity)], ["Since start", `<span class="${plClass(change)}">${usd(change, true)} (${pct(change / s.start)})</span>`],
+    ["Scalps", `${s.trades} (${s.trades ? Math.round(s.wins / s.trades * 100) : 0}% won)`], ["Coins watched", s.coins],
+  ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value" style="font-size:15px">${v}</div></div>`).join("");
+  const open = Object.entries(s.open || {}).map(([c, p]) => `<tr><td>${esc(c)} <span class="tag">open</span></td><td>${p.side > 0 ? "long" : "short"}</td><td class="num">${price(p.entry)}</td><td class="small">stop ${price(p.stop)} · target ${price(p.target)}</td></tr>`);
+  const last = (s.last || []).map(t => `<tr><td>${esc(t.coin)}</td><td>${t.side > 0 ? "long" : "short"}</td><td class="num">${price(t.entry)} → ${price(t.exit)}</td><td class="num"><span class="${plClass(t.pnl)}">${(t.r >= 0 ? "+" : "") + t.r.toFixed(2)}R · ${usd(t.pnl, true)}</span> <span class="small">${esc(t.how)}</span></td></tr>`);
+  $("scalpTable").innerHTML = open.length || last.length ? `<table><tr><th>Coin</th><th>Side</th><th class="num">Price</th><th class="num">Result</th></tr>${open.join("")}${last.join("")}</table>`
+    : `<p class="empty">No scalps yet. It waits for a clean 4-hour sweep with enough room for the fees (about 2 a day across all coins).</p>`;
+  const sc = s.scan;
+  if (!sc || !sc.coins.length) { $("scanTable").innerHTML = `<p class="empty">The scanner runs with the next 5-minute check.</p>`; return; }
+  const tcol = {up: "--good", down: "--critical", mixed: "--text-secondary"};
+  const tr = t => `<span style="color:var(${tcol[t]})">${t}</span>`;
+  $("scanSub").textContent = `${sc.total} coins checked ${new Date(sc.at * 1000).toLocaleTimeString()}. 1-hour EMA 20/30/50: ${sc.up_1h} trending up, ${sc.down_1h} down, the rest mixed. Sorted by how close price is to its 4-hour high or low, where a sweep setup can form.`;
+  $("scanTable").innerHTML = `<table><tr><th>Coin</th><th class="num">Price</th><th style="padding-left:16px">Near</th><th>1h trend</th><th>5m trend</th><th>Status</th></tr>` +
+    sc.coins.map(c => { const low = c.to_low <= c.to_high; return `<tr><td>${esc(c.coin)} <span class="small">${esc(c.venue)}</span></td><td class="num">${price(c.price)}</td><td class="small" style="padding-left:16px">${Math.min(c.to_low, c.to_high) < 0 ? `just past 4h ${low ? "low" : "high"}` : `${(Math.min(c.to_low, c.to_high) * 100).toFixed(2)}% from 4h ${low ? "low" : "high"}`}</td><td>${tr(c.trend_1h)}</td><td>${tr(c.trend_5m)}</td><td class="small">${esc(c.status)}</td></tr>`; }).join("") + `</table>`;
 }
 
 function renderRadar() {
