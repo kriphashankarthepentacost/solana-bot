@@ -267,6 +267,16 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
+    <h2>Risk radar</h2>
+    <p class="sub">Every hour the bot reads the whole market and its own form, and decides how much risk to take. It changes the size of new trades by itself and goes back to normal by itself; open trades always keep their stop-losses.</p>
+    <div class="tiles" id="radarTiles"></div>
+    <div id="radarReadings" class="small" style="margin-top:10px"></div>
+    <h3>The bot's own review of its trades</h3>
+    <p class="small">Before each trade it writes why and how it will get out; after the trade it checks what happened.</p>
+    <div class="tablewrap" id="journalTable"></div>
+  </section>
+
+  <section class="card reveal span-2">
     <h2>What the bot learned</h2>
     <p class="sub">Once a week the bot reviews its own results. It changes nothing by itself: each idea comes as a proposal with proof, and you decide in Telegram (<code>/approve 3</code>, <code>/reject 3</code>, <code>/undo 3</code>).</p>
     <div id="learnReport" class="small"></div>
@@ -509,6 +519,7 @@ function render(d) {
   drawFlow();
   renderStrategies();
   renderMoney();
+  renderRadar();
   renderLearning();
   renderBrain();
   renderFeed();
@@ -628,6 +639,30 @@ function renderMoney() {
     rows.map(([n, s]) => `<tr><td><span class="side">${swatch(n)}${esc(NAMES[n] || n)}</span>${s.on ? "" : `<span class="tag">off</span>`}</td>
       <td class="num">${s.on ? `${Math.round(s.share * 100)}% · ${usd(s.money || 0)}` : "–"}</td>
       <td class="small" style="padding-left:18px">${s.on ? size(s) : esc(s.reason)}</td></tr>`).join("") + `</table>`;
+}
+
+function renderRadar() {
+  const r = data.radar;
+  const label = {"risk on": "Risk on", normal: "Normal", careful: "Careful", "risk off": "Risk off"};
+  const color = {"risk on": "--good", normal: "--text-primary", careful: "--warning", "risk off": "--critical"};
+  if (!r) { $("radarTiles").innerHTML = ""; $("radarReadings").innerHTML = `<p class="empty">The radar is off or hasn't run yet.</p>`; }
+  else {
+    $("radarTiles").innerHTML = [
+      ["Market state", `<span style="color:var(${color[r.state] || "--text-primary"})">${esc(label[r.state] || r.state)}</span>`],
+      ["New trades", `${Math.round((r.scale ?? 1) * 100)}% of normal size`],
+      ["In this state since", ago(r.since)], ["Checked", ago(r.at)],
+    ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value" style="font-size:15px">${v}</div></div>`).join("");
+    const names = {btc_trend: "Bitcoin trend", breadth: "Market breadth", volatility: "Volatility", crash: "Crash check",
+      crowding: "Crowd (funding)", own_form: "Bot's own form"};
+    $("radarReadings").innerHTML = Object.entries(r.readings || {}).map(([k, v]) =>
+      `<p>${v[0] ? (v[0] > 1 ? "⚠⚠" : "⚠") : "✓"} <b>${esc(names[k] || k)}:</b> ${esc(v[1])}</p>`).join("") || `<p class="empty">No readings switched on.</p>`;
+  }
+  const j = data.journal || [];
+  $("journalTable").innerHTML = j.length ? `<table><tr><th>Trade</th><th>Opened in</th><th>Ended by</th><th class="num">Result</th></tr>` +
+    j.map(x => `<tr><td>${coin(x.symbol)}<div class="small">${swatch(x.strategy)} ${esc(NAMES[x.strategy] || x.strategy)} · ${esc(x.why || "")}</div></td>
+      <td class="small">${esc(x.market)}</td><td class="small">${esc(x.ended)}${x.followed_plan ? "" : " (not by plan)"}</td>
+      <td class="num"><span class="${plClass(x.pnl)}">${x.r == null ? usd(x.pnl, true) : (x.r >= 0 ? "+" : "") + x.r.toFixed(2) + "R"}</span></td></tr>`).join("") + `</table>`
+    : `<p class="empty">No reviewed trades yet: each trade gets a review when it closes.</p>`;
 }
 
 function renderLearning() {
