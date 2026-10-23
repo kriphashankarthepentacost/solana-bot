@@ -268,12 +268,20 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
 
   <section class="card reveal span-2">
     <h2>Practice scalper</h2>
-    <p class="sub">Your micro-sweep idea on 5-minute charts across the 150 most-traded altcoins on Hyperliquid and Bybit (cheapest venue first). It trades its own pretend $1,000 (not the bot's money) to prove itself live first.</p>
+    <p class="sub">Your micro-sweep idea on 5-minute charts across the most-traded altcoins (over $2M a day) on Hyperliquid, MEXC, Binance, OKX, Bybit, Bitget, KuCoin and Gate, each coin watched once. It trades its own pretend $1,000 (not the bot's money) to prove itself live first.</p>
     <div class="tiles" id="scalpTiles"></div>
+    <p class="small" id="scalpVenues" style="margin-top:8px"></p>
     <div class="tablewrap" id="scalpTable" style="margin-top:10px"></div>
     <h3 style="margin-top:16px">Coin scanner</h3>
     <p class="sub" id="scanSub">Every watched coin, checked every 5 minutes: EMA 20/30/50 trend on the 1-hour and 5-minute charts, and how close price is to its 4-hour high or low (where a sweep setup can form).</p>
     <div class="tablewrap" id="scanTable"></div>
+  </section>
+
+  <section class="card reveal span-2">
+    <h2>DEX scanner</h2>
+    <p class="sub" id="dexSub">Hot coins on the DEXs of every big chain (GeckoTerminal data, DexScreener charts). Information and alerts only: the bot doesn't trade these, because DEX fees and gas eat scalping profits.</p>
+    <div class="tablewrap" id="dexAlerts"></div>
+    <div class="tablewrap" id="dexTable" style="margin-top:10px"></div>
   </section>
 
   <section class="card reveal span-2">
@@ -530,6 +538,7 @@ function render(d) {
   renderStrategies();
   renderMoney();
   renderScalper();
+  renderDex();
   renderRadar();
   renderLearning();
   renderBrain();
@@ -664,6 +673,8 @@ function renderScalper() {
   const last = (s.last || []).map(t => `<tr><td>${esc(t.coin)}</td><td>${t.side > 0 ? "long" : "short"}</td><td class="num">${price(t.entry)} → ${price(t.exit)}</td><td class="num"><span class="${plClass(t.pnl)}">${(t.r >= 0 ? "+" : "") + t.r.toFixed(2)}R · ${usd(t.pnl, true)}</span> <span class="small">${esc(t.how)}</span></td></tr>`);
   $("scalpTable").innerHTML = open.length || last.length ? `<table><tr><th>Coin</th><th>Side</th><th class="num">Price</th><th class="num">Result</th></tr>${open.join("")}${last.join("")}</table>`
     : `<p class="empty">No scalps yet. It waits for a clean 4-hour sweep with enough room for the fees (about 2 a day across all coins).</p>`;
+  const ven = Object.entries(s.venues || {});
+  $("scalpVenues").innerHTML = ven.length ? `Exchanges: ${ven.map(([v, n]) => n ? `${esc(v)} ✓` : `<span style="color:var(--text-secondary)">${esc(v)} (not reachable)</span>`).join(" · ")}` : "";
   const sc = s.scan;
   if (!sc || !sc.coins.length) { $("scanTable").innerHTML = `<p class="empty">The scanner runs with the next 5-minute check.</p>`; return; }
   const tcol = {up: "--good", down: "--critical", mixed: "--text-secondary"};
@@ -671,6 +682,18 @@ function renderScalper() {
   $("scanSub").textContent = `${sc.total} coins checked ${new Date(sc.at * 1000).toLocaleTimeString()}. 1-hour EMA 20/30/50: ${sc.up_1h} trending up, ${sc.down_1h} down, the rest mixed. Sorted by how close price is to its 4-hour high or low, where a sweep setup can form.`;
   $("scanTable").innerHTML = `<table><tr><th>Coin</th><th class="num">Price</th><th style="padding-left:16px">Near</th><th>1h trend</th><th>5m trend</th><th>Status</th></tr>` +
     sc.coins.map(c => { const low = c.to_low <= c.to_high; return `<tr><td>${esc(c.coin)} <span class="small">${esc(c.venue)}</span></td><td class="num">${price(c.price)}</td><td class="small" style="padding-left:16px">${Math.min(c.to_low, c.to_high) < 0 ? `just past 4h ${low ? "low" : "high"}` : `${(Math.min(c.to_low, c.to_high) * 100).toFixed(2)}% from 4h ${low ? "low" : "high"}`}</td><td>${tr(c.trend_1h)}</td><td>${tr(c.trend_5m)}</td><td class="small">${esc(c.status)}</td></tr>`; }).join("") + `</table>`;
+}
+
+function renderDex() {
+  const d = data.dex_scan;
+  if (!d) { $("dexAlerts").innerHTML = ""; $("dexTable").innerHTML = `<p class="empty">The DEX scanner runs every 15 minutes after the next update.</p>`; return; }
+  const money = x => x >= 1e6 ? `$${(x / 1e6).toFixed(1)}M` : `$${Math.round(x / 1e3)}k`;
+  const chg = x => `<span class="${plClass(x)}">${x >= 0 ? "+" : ""}${x.toFixed(1)}%</span>`;
+  $("dexSub").textContent = `${d.total} quality pools on ${d.chains.length} chains (${d.chains.join(", ")}), checked ${new Date(d.at * 1000).toLocaleTimeString()}. Information and alerts only: the bot doesn't trade these (DEX fees and gas eat scalping profits).`;
+  $("dexAlerts").innerHTML = d.alerts.length ? `<p class="small" style="margin:0 0 6px">Alerts sent in the last 24 hours:</p><table>` +
+    d.alerts.map(a => `<tr><td><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.coin)}</a> <span class="small">${esc(a.chain)}</span></td><td class="num">${chg(a.ch_1h)} 1h</td><td class="num">${chg(a.ch_24h)} 24h</td><td class="num small">liq ${money(a.liquidity)}</td></tr>`).join("") + `</table>` : "";
+  $("dexTable").innerHTML = `<table><tr><th>Coin</th><th>Chain</th><th class="num">1h</th><th class="num">24h</th><th class="num">Volume 1h</th><th class="num">Liquidity</th><th class="num">Buyers / sellers 1h</th></tr>` +
+    d.pools.map(r => `<tr><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.coin)}</a></td><td class="small">${esc(r.chain)} · ${esc(r.dex)}</td><td class="num">${chg(r.ch_1h)}</td><td class="num">${chg(r.ch_24h)}</td><td class="num">${money(r.vol_1h)}</td><td class="num">${money(r.liquidity)}</td><td class="num small">${r.buyers_1h} / ${r.sellers_1h}</td></tr>`).join("") + `</table>`;
 }
 
 function renderRadar() {
