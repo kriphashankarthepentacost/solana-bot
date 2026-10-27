@@ -14,7 +14,7 @@
   --surface-0: #080b10; --surface-1: #10141b; --surface-2: #161b24; --border: #222a36; --grid: #1a212b;
   --text-primary: #e8eef6; --text-secondary: #a3afc0; --text-muted: #6d798b;
   --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
-  --series-5: #d55181; --series-6: #2f9e2f; --series-7: #9085e9;
+  --series-5: #d55181; --series-6: #2f9e2f; --series-7: #9085e9; --series-8: #0e9aa7; --series-9: #9a7b4f;
   --good: #2fb52f; --warning: #fab219; --critical: #e66767; --link: #7fb2f0;
   --accent: #3fb6ff; --glow: rgba(63, 182, 255, .16);
 }
@@ -23,7 +23,7 @@
   --surface-0: #f4f3f0; --surface-1: #fcfcfb; --surface-2: #f0efeb; --border: #e3e2dd; --grid: #ecebe7;
   --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7973;
   --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
-  --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #6250d6; --series-8: #13b5c4; --series-9: #c49a5c;
   --good: #0ca30c; --critical: #d03b3b; --link: #1f63b5; --accent: #1f63b5; --glow: rgba(42, 120, 214, .12);
 }
 * { box-sizing: border-box; }
@@ -267,20 +267,23 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
-    <h2>Practice scalper</h2>
-    <p class="sub">Your micro-sweep idea on 5-minute charts across the most-traded altcoins (over $2M a day) on Hyperliquid, MEXC, Binance, OKX, Bybit, Bitget, KuCoin and Gate, each coin watched once. It trades its own pretend $1,000 (not the bot's money) to prove itself live first.</p>
-    <div class="tiles" id="scalpTiles"></div>
+    <h2>Coin scanner</h2>
+    <p class="sub">The most-traded altcoins (over $2M a day) on Hyperliquid, MEXC, Binance, OKX, Bybit, Bitget, KuCoin and Gate, each coin watched once. Scalping them is off: a 1-minute check (2026-10-26) showed the 5-minute scalp loses after fees, so the bot only watches.</p>
+    <div class="tiles" id="scalpTiles" style="display:none"></div>
     <p class="small" id="scalpVenues" style="margin-top:8px"></p>
-    <div class="tablewrap" id="scalpTable" style="margin-top:10px"></div>
-    <h3 style="margin-top:16px">Coin scanner</h3>
+    <div class="tablewrap" id="scalpTable" style="display:none"></div>
+    <h3 style="margin-top:16px">Every coin, checked every 5 minutes</h3>
     <p class="sub" id="scanSub">Every watched coin, checked every 5 minutes: EMA 20/30/50 trend on the 1-hour and 5-minute charts, and how close price is to its 4-hour high or low (where a sweep setup can form).</p>
     <div class="tablewrap" id="scanTable"></div>
   </section>
 
   <section class="card reveal span-2">
-    <h2>DEX scanner</h2>
-    <p class="sub" id="dexSub">Hot coins on the DEXs of every big chain (GeckoTerminal data, DexScreener charts). Information and alerts only: the bot doesn't trade these, because DEX fees and gas eat scalping profits.</p>
-    <div class="tablewrap" id="dexAlerts"></div>
+    <h2>DEX trading</h2>
+    <p class="sub">The bot buys the hot coins of the DEX scan (+10% in 1 h and +25% in 24 h, $250k+ liquidity, more buyers than sellers, 6+ hours old) on Solana, Base, BNB Chain, Arbitrum, Polygon, Avalanche, TON and Sui, with 3% of its money, at most 3 coins. Each is sold at -10%, +25% or after 24 hours. Pool fees, price impact and network fees are counted. Unproven: judged after 30 trades.</p>
+    <div class="tiles" id="dexTiles"></div>
+    <div class="tablewrap" id="dexTrades" style="margin-top:10px"></div>
+    <h3 style="margin-top:16px">What the scan sees</h3>
+    <div class="tablewrap" id="dexAlerts" style="display:none"></div>
     <div class="tablewrap" id="dexTable" style="margin-top:10px"></div>
   </section>
 
@@ -402,8 +405,8 @@ const hours = h => h == null ? "–" : h < 1 ? Math.round(h * 60) + " min" : h <
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Fixed colour per strategy (never reassigned when some are missing).
-const STRATS = ["trend", "grid", "perps", "arbitrage", "sniper", "pumpfun", "fee_reserve"];
-const NAMES = {trend: "Trend", grid: "Grid", perps: "Sweep (Hyperliquid)", arbitrage: "Arbitrage", sniper: "Sniper", pumpfun: "pump.fun", fee_reserve: "Fee reserve"};
+const STRATS = ["trend", "grid", "perps", "arbitrage", "sniper", "pumpfun", "fee_reserve", "dex", "scalp"];
+const NAMES = {trend: "Trend", grid: "Grid", perps: "Futures (sweep)", arbitrage: "Arbitrage", sniper: "Sniper", pumpfun: "pump.fun", scalp: "Scalp", dex: "DEX trading", fee_reserve: "Fee reserve"};
 const scolor = s => css("--series-" + (STRATS.indexOf(s) + 1 || 7));
 const SIDES = {buy: ["Bought", "--series-1"], sell: ["Sold", "--series-2"], arb: ["Arbitrage", "--series-3"],
   long: ["Long", "--series-1"], short: ["Short", "--series-2"], "close long": ["Closed long", "--series-2"], "close short": ["Closed short", "--series-1"]};
@@ -572,7 +575,10 @@ function render(d) {
   $("rules").innerHTML = [
     `Spot trades go through Jupiter (cheapest route on Solana); futures trades use Hyperliquid prices.`,
     `Every trade has a stop-loss. If it is hit, the trade loses at most ${(d.risk_per_trade * 100).toFixed(1)}% of that strategy's money.`,
-    `Futures use at most 2x leverage, always with a stop-loss.`,
+    `Futures use at most 2x leverage, always with a stop-loss, at most 3 trades in one direction. At +1R half the trade is closed and the rest's stop moves to entry + fees; then the stop trails 2.5 x ATR behind the best price (no fixed target, so winners can run).`,
+    `Trend trades are sized so a stop-out costs the planned risk including swap costs. The grid never holds two lots within half a step of each other.`,
+    `DEX coins: 3% of the money, at most 3 at once, sold at -10%, +25% or after 24 hours.`,
+    `Every rule was tested on months of past prices first; changes that made less money were left off.`,
     `If the bot loses ${(d.daily_loss_limit * 100).toFixed(0)}% in one day, it opens no new trades until the next day.`,
     `If its money falls below ${usd(d.death_threshold)}, it sells what it can, writes a death report, and never runs again.`,
   ].map(r => `<li>${r}</li>`).join("");
@@ -684,15 +690,33 @@ function renderScalper() {
     sc.coins.map(c => { const low = c.to_low <= c.to_high; return `<tr><td>${esc(c.coin)} <span class="small">${esc(c.venue)}</span></td><td class="num">${price(c.price)}</td><td class="small" style="padding-left:16px">${Math.min(c.to_low, c.to_high) < 0 ? `just past 4h ${low ? "low" : "high"}` : `${(Math.min(c.to_low, c.to_high) * 100).toFixed(2)}% from 4h ${low ? "low" : "high"}`}</td><td>${tr(c.trend_1h)}</td><td>${tr(c.trend_5m)}</td><td class="small">${esc(c.status)}</td></tr>`; }).join("") + `</table>`;
 }
 
+function renderDexTrades() {
+  const t = data.dex_trades;
+  const share = ((data.money_plan || {}).strategies || {}).dex;
+  if (!t) {
+    $("dexTiles").innerHTML = "";
+    $("dexTrades").innerHTML = `<p class="empty">No DEX trades yet${share && share.on ? ` - ${usd(share.money)} ready, it buys when the scan finds a hot coin` : ""}.</p>`;
+    return;
+  }
+  $("dexTiles").innerHTML = [
+    ["DEX money", share && share.on ? usd(share.money) : "off"], ["Result so far", `<span class="${plClass(t.result)}">${usd(t.result, true)}</span>`],
+    ["Closed", `${t.closed} (${t.closed ? Math.round(t.wins / t.closed * 100) : 0}% won)`], ["Open now", t.open.length],
+  ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value" style="font-size:15px">${v}</div></div>`).join("");
+  const open = t.open.map(p => `<tr><td><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.coin)}</a> <span class="tag">open</span> <span class="small">${esc(p.chain)}</span></td><td class="num">${usd(p.paid)}</td><td class="num"><span class="${plClass(p.change)}">${pct(p.change)}</span></td><td class="small" style="padding-left:16px">bought ${ago(p.opened)}</td></tr>`);
+  const last = t.last.map(x => `<tr><td>${esc(x.coin)} <span class="small">${esc(x.chain)}</span></td><td class="num">${usd(x.paid)}</td><td class="num"><span class="${plClass(x.pnl)}">${usd(x.pnl, true)}</span></td><td class="small" style="padding-left:16px">${esc(x.how)}</td></tr>`);
+  $("dexTrades").innerHTML = `<table><tr><th>Coin</th><th class="num">Paid</th><th class="num">Result</th><th style="padding-left:16px">How</th></tr>${open.join("")}${last.join("")}</table>`;
+}
+
 function renderDex() {
+  renderDexTrades();
   const d = data.dex_scan;
   if (!d) { $("dexAlerts").innerHTML = ""; $("dexTable").innerHTML = `<p class="empty">The DEX scanner runs every 15 minutes after the next update.</p>`; return; }
   const money = x => x >= 1e6 ? `$${(x / 1e6).toFixed(1)}M` : `$${Math.round(x / 1e3)}k`;
   const chg = x => `<span class="${plClass(x)}">${x >= 0 ? "+" : ""}${x.toFixed(1)}%</span>`;
-  $("dexSub").textContent = `${d.total} quality pools on ${d.chains.length} chains (${d.chains.join(", ")}), checked ${new Date(d.at * 1000).toLocaleTimeString()}. Information and alerts only: the bot doesn't trade these (DEX fees and gas eat scalping profits).`;
+  const caption = `<p class="small" style="margin:0 0 6px">${d.total} quality pools on ${d.chains.length} chains, checked ${new Date(d.at * 1000).toLocaleTimeString()}. The hot ones are bought (above).</p>`;
   $("dexAlerts").innerHTML = d.alerts.length ? `<p class="small" style="margin:0 0 6px">Alerts sent in the last 24 hours:</p><table>` +
     d.alerts.map(a => `<tr><td><a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.coin)}</a> <span class="small">${esc(a.chain)}</span></td><td class="num">${chg(a.ch_1h)} 1h</td><td class="num">${chg(a.ch_24h)} 24h</td><td class="num small">liq ${money(a.liquidity)}</td></tr>`).join("") + `</table>` : "";
-  $("dexTable").innerHTML = `<table><tr><th>Coin</th><th>Chain</th><th class="num">1h</th><th class="num">24h</th><th class="num">Volume 1h</th><th class="num">Liquidity</th><th class="num">Buyers / sellers 1h</th></tr>` +
+  $("dexTable").innerHTML = caption + `<table><tr><th>Coin</th><th>Chain</th><th class="num">1h</th><th class="num">24h</th><th class="num">Volume 1h</th><th class="num">Liquidity</th><th class="num">Buyers / sellers 1h</th></tr>` +
     d.pools.map(r => `<tr><td><a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.coin)}</a></td><td class="small">${esc(r.chain)} · ${esc(r.dex)}</td><td class="num">${chg(r.ch_1h)}</td><td class="num">${chg(r.ch_24h)}</td><td class="num">${money(r.vol_1h)}</td><td class="num">${money(r.liquidity)}</td><td class="num small">${r.buyers_1h} / ${r.sellers_1h}</td></tr>`).join("") + `</table>`;
 }
 
