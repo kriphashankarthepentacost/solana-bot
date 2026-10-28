@@ -267,11 +267,11 @@ pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }
   </section>
 
   <section class="card reveal span-2">
-    <h2>Coin scanner</h2>
-    <p class="sub">The most-traded altcoins (over $2M a day) on Hyperliquid, MEXC, Binance, OKX, Bybit, Bitget, KuCoin and Gate, each coin watched once. Scalping them is off: a 1-minute check (2026-10-26) showed the 5-minute scalp loses after fees, so the bot only watches.</p>
-    <div class="tiles" id="scalpTiles" style="display:none"></div>
+    <h2>Scalping + coin scanner</h2>
+    <p class="sub">5-minute micro-sweep scalps on the most-traded altcoins (over $2M a day) on Hyperliquid, MEXC, Binance, OKX, Bybit, Bitget, KuCoin and Gate, with 3% of the bot's own money: 0.5% risk per scalp, at most 3 open. Unproven: a 1-minute check (2026-10-26) said it loses after fees, so it stays small and is judged after 30 scalps.</p>
+    <div class="tiles" id="scalpTiles"></div>
     <p class="small" id="scalpVenues" style="margin-top:8px"></p>
-    <div class="tablewrap" id="scalpTable" style="display:none"></div>
+    <div class="tablewrap" id="scalpTable" style="margin-top:10px"></div>
     <h3 style="margin-top:16px">Every coin, checked every 5 minutes</h3>
     <p class="sub" id="scanSub">Every watched coin, checked every 5 minutes: EMA 20/30/50 trend on the 1-hour and 5-minute charts, and how close price is to its 4-hour high or low (where a sweep setup can form).</p>
     <div class="tablewrap" id="scanTable"></div>
@@ -578,6 +578,7 @@ function render(d) {
     `Futures use at most 2x leverage, always with a stop-loss, at most 3 trades in one direction. At +1R half the trade is closed and the rest's stop moves to entry + fees; then the stop trails 2.5 x ATR behind the best price (no fixed target, so winners can run).`,
     `Trend trades are sized so a stop-out costs the planned risk including swap costs. The grid never holds two lots within half a step of each other.`,
     `DEX coins: 3% of the money, at most 3 at once, sold at -10%, +25% or after 24 hours.`,
+    `Scalps (3%) and the new-coin sniper (2%) trade small slices of the real money: both lost in earlier tests, so they are judged after 30 trades. No strategy trades pretend money.`,
     `Every rule was tested on months of past prices first; changes that made less money were left off.`,
     `If the bot loses ${(d.daily_loss_limit * 100).toFixed(0)}% in one day, it opens no new trades until the next day.`,
     `If its money falls below ${usd(d.death_threshold)}, it sells what it can, writes a death report, and never runs again.`,
@@ -669,14 +670,15 @@ function renderMoney() {
 
 function renderScalper() {
   const s = data.scalper;
-  if (!s) { $("scalpTiles").innerHTML = ""; $("scalpTable").innerHTML = `<p class="empty">The practice scalper starts after the next update.</p>`; return; }
-  const change = s.equity - s.start;
+  const live = data.scalp_live || {trades: 0, wins: 0, equity: 0, open: {}, orders: {}, last: []};  // the bot's own money
+  const share = ((data.money_plan || {}).strategies || {}).scalp;
+  if (!s) { $("scalpTiles").innerHTML = ""; $("scalpTable").innerHTML = `<p class="empty">The scanner starts after the next update.</p>`; return; }
   $("scalpTiles").innerHTML = [
-    ["Practice money", usd(s.equity)], ["Since start", `<span class="${plClass(change)}">${usd(change, true)} (${pct(change / s.start)})</span>`],
-    ["Scalps", `${s.trades} (${s.trades ? Math.round(s.wins / s.trades * 100) : 0}% won)`], ["Coins watched", s.coins],
+    ["Scalp money", share && share.on ? usd(share.money) : "off"], ["Result so far", `<span class="${plClass(live.equity)}">${usd(live.equity, true)}</span>`],
+    ["Scalps", `${live.trades} (${live.trades ? Math.round(live.wins / live.trades * 100) : 0}% won)`], ["Coins watched", s.coins],
   ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value" style="font-size:15px">${v}</div></div>`).join("");
-  const open = Object.entries(s.open || {}).map(([c, p]) => `<tr><td>${esc(c)} <span class="tag">open</span></td><td>${p.side > 0 ? "long" : "short"}</td><td class="num">${price(p.entry)}</td><td class="small">stop ${price(p.stop)} · target ${price(p.target)}</td></tr>`);
-  const last = (s.last || []).map(t => `<tr><td>${esc(t.coin)}</td><td>${t.side > 0 ? "long" : "short"}</td><td class="num">${price(t.entry)} → ${price(t.exit)}</td><td class="num"><span class="${plClass(t.pnl)}">${(t.r >= 0 ? "+" : "") + t.r.toFixed(2)}R · ${usd(t.pnl, true)}</span> <span class="small">${esc(t.how)}</span></td></tr>`);
+  const open = Object.entries(live.open || {}).map(([c, p]) => `<tr><td>${esc(c)} <span class="tag">open</span></td><td>${p.side > 0 ? "long" : "short"}</td><td class="num">${price(p.entry)}</td><td class="small" style="padding-left:16px">stop ${price(p.stop)} · target ${price(p.target)}</td></tr>`);
+  const last = (live.last || []).map(t => `<tr><td>${esc(t.coin)}</td><td>${t.side > 0 ? "long" : "short"}</td><td class="num">${price(t.entry)} → ${price(t.exit)}</td><td class="num"><span class="${plClass(t.pnl)}">${(t.r >= 0 ? "+" : "") + t.r.toFixed(2)}R · ${usd(t.pnl, true)}</span> <span class="small">${esc(t.how)}</span></td></tr>`);
   $("scalpTable").innerHTML = open.length || last.length ? `<table><tr><th>Coin</th><th>Side</th><th class="num">Price</th><th class="num">Result</th></tr>${open.join("")}${last.join("")}</table>`
     : `<p class="empty">No scalps yet. It waits for a clean 4-hour sweep with enough room for the fees (about 2 a day across all coins).</p>`;
   const ven = Object.entries(s.venues || {});
