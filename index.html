@@ -503,7 +503,7 @@ function render(d) {
   if (d.state === "DEAD") banner = `<div class="card banner dead"><h2>The bot has died</h2><p class="sub">Its money fell below ${usd(d.death_threshold)}. It can never be started again.</p><pre>${esc(d.death_report)}</pre></div>`;
   else if (stale) banner = `<div class="card banner"><h2>No news from the bot since ${ago(d.now)}</h2><p class="sub">The phone running it may be off or offline. These are its last numbers.</p></div>`;
   else if (d.paused_daily) banner = `<div class="card banner"><h2>Paused for today</h2><p class="sub">It lost more than ${(d.daily_loss_limit * 100).toFixed(0)}% today, so it opens no new trades until tomorrow (UTC). Stop-losses still protect open trades.</p></div>`;
-  else if (d.only_strategies) banner = `<div class="card banner"><h2>Only ${esc(d.only_strategies.map(s => NAMES[s] || s).join(", "))} is trading</h2><p class="sub">Your decision: every other strategy opens no new trades and its money stays offline in cash, whatever share is shown below.</p></div>`;
+  else if (d.only_strategies) banner = `<div class="card banner"><h2>Only ${esc(d.only_strategies.map(s => NAMES[s] || s).join(", "))} is trading</h2><p class="sub">Your decision: it trades with all the money except the 5% SOL fee reserve. Every other strategy opens no new trades, whatever shares are shown below.</p></div>`;
   else if (d.paused_manual) banner = `<div class="card banner"><h2>Paused by the owner</h2><p class="sub">No new trades for now. Open trades are still protected.</p></div>`;
   $("banner").innerHTML = banner;
 
