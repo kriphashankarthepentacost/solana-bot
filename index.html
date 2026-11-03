@@ -227,10 +227,10 @@ section[id] { scroll-margin-top: 16px; }
 <body>
 <nav class="sidenav" aria-label="Sections">
   <div class="brandrow"><div class="logo" aria-hidden="true">◎</div>Solana Bot</div>
-  <a href="#overview" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>Overview</a>
-  <a href="#strategies"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Strategies</a>
-  <a href="#trades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13l-3-3M20 17H7l3 3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Trades</a>
-  <a href="#analysis"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 15l4-5 3 3 5-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Analysis</a>
+  <a href="#sec-overview" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM13 3v6h8V3zM3 21h8v-6H3z" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>Overview</a>
+  <a href="#sec-strategies"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Strategies</a>
+  <a href="#sec-trades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h13l-3-3M20 17H7l3 3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Trades</a>
+  <a href="#sec-analysis"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 15l4-5 3 3 5-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Analysis</a>
 </nav>
 <main>
   <header>
@@ -244,7 +244,7 @@ section[id] { scroll-margin-top: 16px; }
 
   <div id="banner"></div>
 
-  <section class="card hero-card" id="overview">
+  <section class="card hero-card" id="sec-overview">
     <div class="label">Total money (equity, in USDT)</div>
     <div class="hero" id="equity">–</div>
     <div class="small" id="change"></div>
@@ -283,7 +283,7 @@ section[id] { scroll-margin-top: 16px; }
     <p class="small" id="flowNote"></p>
   </section>
 
-  <section class="card reveal span-2" id="strategies">
+  <section class="card reveal span-2" id="sec-strategies">
     <h2>Strategies</h2>
     <p class="sub">How the money is split, and how each strategy is doing. Tap a strategy to see how it works and what it is doing now.</p>
     <div class="strat-grid">
@@ -363,7 +363,7 @@ section[id] { scroll-margin-top: 16px; }
     <div id="positions"></div>
   </section>
 
-  <section class="card reveal span-2" id="trades">
+  <section class="card reveal span-2" id="sec-trades">
     <h2>Every trade, one by one</h2>
     <p class="sub" id="rtSummary">Each trade from buy to sell: the price in, the price out, and what it made or lost. Open trades are on top with their result right now.</p>
     <div class="filters">
@@ -389,7 +389,7 @@ section[id] { scroll-margin-top: 16px; }
     <div id="trades"></div>
   </section>
 
-  <section class="card reveal span-2" id="analysis">
+  <section class="card reveal span-2" id="sec-analysis">
     <h2>Analysis</h2>
     <p class="sub">How the results add up.</p>
     <h3>Profit or loss per day</h3>
