@@ -6,31 +6,31 @@
 <title>Solana Bot Live</title>
 <meta name="description" content="Live view of a Solana trading bot: money, strategies, trades and analytics.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* Dark control-room look (DESIGN.md): near-black panels, olive glow, one lime accent. Light theme kept. */
+/* Terminal look (owner 2026-11-03): black, amber, mono digits, square dense panels. Light theme kept. */
 :root {
   color-scheme: dark;
-  --surface-0: #070807; --surface-1: #0e120a; --surface-2: #131909; --border: #242c12; --grid: #242c12;
-  --text-primary: #f2f4ec; --text-secondary: #b9c0ab; --text-muted: #9aa38b;
-  --series-1: #c5f02c; --series-2: #e8b872; --series-3: #4fc1a6; --series-4: #d9a03a;
-  --series-5: #e88aa8; --series-6: #7ccf5a; --series-7: #a99cf0; --series-8: #3fb8c6; --series-9: #c4a06a;
-  --good: #a9e34b; --warning: #e8b872; --critical: #ff8f7a; --link: #c5f02c;
-  --accent: #c5f02c; --on-accent: #0d1200; --dot-dim: #5f7320; --glow: #50601066; --focus: var(--accent);
+  --surface-0: #000000; --surface-1: #0a0a0a; --surface-2: #121212; --border: #2b2b2b; --grid: #1f1f1f;
+  --text-primary: #f2e9d8; --text-secondary: #c9b48c; --text-muted: #a08c68;
+  --series-1: #ffb000; --series-2: #4fa3ff; --series-3: #36d399; --series-4: #ff7a1a;
+  --series-5: #ff5fa2; --series-6: #a3e635; --series-7: #b39cff; --series-8: #22d3ee; --series-9: #d4b483;
+  --good: #3ddc84; --warning: #ffb000; --critical: #ff5c5c; --link: #ffb000;
+  --accent: #ffb000; --on-accent: #000000; --dot-dim: #6b5520; --glow: transparent; --focus: var(--accent);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --motion-press: 120ms; --motion-quick: 180ms; --motion-base: 240ms;
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --surface-0: #f5f6f0; --surface-1: #ffffff; --surface-2: #f3f5ec; --border: #dde1d1; --grid: #dde1d1;
-  --text-primary: #14170c; --text-secondary: #4b5240; --text-muted: #5c6450;
-  --series-1: #4f6600; --series-2: #b4540f; --series-3: #0f7a63; --series-4: #8a5a00;
-  --series-5: #b2386a; --series-6: #2f7d18; --series-7: #5a46c2; --series-8: #0f7f8c; --series-9: #8a6a3a;
-  --good: #3f6212; --warning: #8a5a00; --critical: #c23636; --link: #4f6600;
-  --accent: #4f6600; --on-accent: #ffffff; --dot-dim: #7f8c60; --glow: #a5bc5733;
+  --surface-0: #f4f1ea; --surface-1: #ffffff; --surface-2: #f7f4ee; --border: #d6cfc0; --grid: #e6e0d4;
+  --text-primary: #1a1408; --text-secondary: #5a4a28; --text-muted: #6e5c36;
+  --series-1: #a35f00; --series-2: #1f5fbf; --series-3: #0f7a55; --series-4: #b4540f;
+  --series-5: #b2386a; --series-6: #4d7c0f; --series-7: #5a46c2; --series-8: #0e7490; --series-9: #8a6a3a;
+  --good: #137a3c; --warning: #a35f00; --critical: #c23636; --link: #a35f00;
+  --accent: #a35f00; --on-accent: #ffffff; --dot-dim: #b8a27a; --glow: transparent;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--surface-0); color: var(--text-primary);
-       font: 14px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+       font: 14px/1.45 "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
        font-variant-numeric: lining-nums tabular-nums; }
 main { max-width: 1240px; margin: 0 auto; padding: 16px 16px 48px; overflow-wrap: anywhere; }
 .mono, .hero, .tile .value, td.num, .tick, .stat .value { font-variant-numeric: lining-nums tabular-nums; }
@@ -42,7 +42,7 @@ a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; }
-.logo { width: 34px; height: 34px; border-radius: 10px; background: var(--accent);
+.logo { width: 34px; height: 34px; border-radius: 2px; background: var(--accent);
         display: grid; place-items: center; color: var(--on-accent); font-weight: 700; font-size: 16px; }
 .entity { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
 .entity span { font-size: 13px; font-weight: 600;  color: var(--text-secondary);
@@ -56,14 +56,15 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 @keyframes flow { to { stroke-dashoffset: -32; } }
 .head-right { display: flex; gap: 8px; align-items: center; }
 h1 { font-size: 20px; font-weight: 600; margin: 0; }
-h2 { font-size: 16px; margin: 0 0 4px; color: var(--text-primary); font-weight: 600; }
+h2 { font-size: 14px; margin: 0 0 6px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+     padding-bottom: 6px; border-bottom: 1px solid var(--border); }
 h3 { font-size: 13px; margin: 18px 0 6px; color: var(--text-secondary); font-weight: 600; }
 .sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 12px; }
 .card { position: relative; overflow: hidden; isolation: isolate; background: var(--surface-1); border: 1px solid var(--border);
-        border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: inset 0 0 28px var(--glow);
+        border-radius: 2px; padding: 14px; margin-bottom: 10px; box-shadow: none;
         transition: border-color var(--motion-press) ease; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; min-height: 36px;
-        padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); }
+        padding: 4px 12px; border-radius: 2px; border: 1px solid var(--border); background: var(--surface-1); }
 button.chip { cursor: pointer; color: var(--text-primary); font: inherit; font-size: 13px; font-weight: 600; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .live .dot { animation: pulse 2s infinite; }
@@ -78,11 +79,12 @@ button.chip { cursor: pointer; color: var(--text-primary); font: inherit; font-s
                      background: radial-gradient(closest-side, var(--glow), transparent); }
 .hero-card > * { position: relative; }
 .label { color: var(--text-muted); font-size: 13px; }
-.hero { font-size: 32px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.hero { font-size: 34px; font-weight: 600; color: var(--accent); letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .row { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .stat .value { font-weight: 600; font-variant-numeric: tabular-nums; }
 .tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
-.tile { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface-2); }
+.tile { border: 1px solid var(--border); border-radius: 2px; padding: 8px 10px; background: var(--surface-2); }
+.tile .label { text-transform: uppercase; letter-spacing: .04em; }
 .tile .value { font-weight: 600; font-size: 20px; font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero { font-size: 38px; } }
 .lifebar { height: 8px; border-radius: 4px; background: var(--grid); overflow: hidden; margin-top: 6px; }
@@ -91,7 +93,7 @@ button.chip { cursor: pointer; color: var(--text-primary); font: inherit; font-s
 /* ticker */
 .ticker { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 0 12px; margin-bottom: 0; }
 .ticker::-webkit-scrollbar { display: none; }
-.tick { flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface-1); border-radius: 10px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+.tick { flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface-1); border-radius: 2px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
 .tick b { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-right: 6px; }
 .tick .arrow { font-size: 13px; margin-left: 4px; }
 .tick.up { animation: flashUp 1.2s; } .tick.down { animation: flashDown 1.2s; }
@@ -105,9 +107,9 @@ button.chip { cursor: pointer; color: var(--text-primary); font: inherit; font-s
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); margin: 6px 0; }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
-.tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; gap: 2px; }
+.tabs { display: inline-flex; border: 1px solid var(--border); border-radius: 2px; padding: 2px; gap: 2px; }
 .tabs button { border: 0; background: none; color: var(--text-secondary); font: inherit; font-size: 13px; font-weight: 600;
-               padding: 3px 10px; border-radius: 999px; cursor: pointer; transition: background .2s, color .2s; }
+               padding: 3px 10px; border-radius: 2px; cursor: pointer; transition: background .2s, color .2s; }
 .tabs button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; }
 .draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 1.4s cubic-bezier(.3,.7,.2,1) forwards; }
@@ -135,7 +137,7 @@ button.chip { cursor: pointer; color: var(--text-primary); font: inherit; font-s
 /* activity */
 .feed { display: grid; gap: 8px; }
 .act { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 10px; padding: 10px 12px; border: 1px solid var(--border);
-       border-radius: 10px; background: var(--surface-2); }
+       border-radius: 2px; background: var(--surface-2); }
 .act .sw { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; }
 .act.busy .sw { animation: pulse 1.6s infinite; }
 .act p { margin: 2px 0 0; font-size: 13px; color: var(--text-secondary); }
@@ -149,12 +151,12 @@ td { padding: 7px 6px 7px 0; border-top: 1px solid var(--border); vertical-align
 td.num, th.num { text-align: right; padding-right: 0; padding-left: 10px; white-space: nowrap; overflow-wrap: normal; }
 tr.new td { animation: rowIn 1.6s; }
 .pl::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
-.pl.up::before { background: var(--good); }
-.pl.down::before { background: var(--critical); }
+.pl.up::before { background: none; content: "\25B2"; color: var(--good); width: auto; height: auto; font-size: 13px; }
+.pl.down::before { background: none; content: "\25BC"; color: var(--critical); width: auto; height: auto; font-size: 13px; }
 .side { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 select { font: inherit; font-size: 14px; color: var(--text-primary); background: var(--surface-1);
-         border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; min-height: 44px; }
+         border: 1px solid var(--border); border-radius: 2px; padding: 8px 10px; min-height: 44px; }
 .more { margin-top: 8px; }
 #trades td:nth-child(2) { min-width: 150px; }
 @media (max-width: 520px) { .hide-sm { display: none; } }
@@ -199,9 +201,10 @@ button:active { transform: scale(0.98); transition: transform var(--motion-press
 /* shell: sidebar on wide screens, bottom bar on phones (DESIGN.md 4.4, 5) */
 .sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 240px; padding: 20px 12px; border-right: 1px solid var(--border);
            background: var(--surface-0); display: flex; flex-direction: column; gap: 4px; z-index: 4; }
-.sidenav .brandrow { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; font-weight: 600; font-size: 16px; }
-.sidenav a { position: relative; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: 12px;
-             color: var(--text-secondary); font-size: 14px; font-weight: 500; text-decoration: none; }
+.sidenav .brandrow { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; font-weight: 700; font-size: 15px;
+                     color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+.sidenav a { position: relative; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: 2px;
+             color: var(--text-secondary); font-size: 14px; font-weight: 500; text-decoration: none; text-transform: uppercase; letter-spacing: .04em; }
 .sidenav a:hover { color: var(--text-primary); background: var(--surface-1); text-decoration: none; }
 .sidenav a[aria-current="true"] { color: var(--text-primary); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .sidenav a[aria-current="true"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2px;
@@ -242,7 +245,7 @@ section[id] { scroll-margin-top: 16px; }
   <div id="banner"></div>
 
   <section class="card hero-card" id="overview">
-    <div class="label">Total money (equity)</div>
+    <div class="label">Total money (equity, in USDT)</div>
     <div class="hero" id="equity">–</div>
     <div class="small" id="change"></div>
     <div class="row" style="margin-top:12px">
@@ -537,12 +540,12 @@ function render(d) {
   if (d.state === "DEAD") banner = `<div class="card banner dead"><h2>The bot has died</h2><p class="sub">Its money fell below ${usd(d.death_threshold)}. It can never be started again.</p><pre>${esc(d.death_report)}</pre></div>`;
   else if (stale) banner = `<div class="card banner"><h2>No news from the bot since ${ago(d.now)}</h2><p class="sub">The phone running it may be off or offline. These are its last numbers.</p></div>`;
   else if (d.paused_daily) banner = `<div class="card banner"><h2>Paused for today</h2><p class="sub">It lost more than ${(d.daily_loss_limit * 100).toFixed(0)}% today, so it opens no new trades until tomorrow (UTC). Stop-losses still protect open trades.</p></div>`;
-  else if (d.only_strategies) banner = `<div class="card banner"><h2>Only ${esc(d.only_strategies.map(s => NAMES[s] || s).join(", "))} is trading</h2><p class="sub">Your decision: it trades with 100% of the money (the SOL it holds still pays network fees). Every other strategy is offline and opens no new trades.</p></div>`;
+  else if (d.only_strategies) banner = `<div class="card banner"><h2>Only ${esc(d.only_strategies.map(s => NAMES[s] || s).join(", "))} is trading</h2><p class="sub">Your decision: it trades with 100% of the money (USDT). Every other strategy is offline and opens no new trades.</p></div>`;
   else if (d.paused_manual) banner = `<div class="card banner"><h2>Paused by the owner</h2><p class="sub">No new trades for now. Open trades are still protected.</p></div>`;
   $("banner").innerHTML = banner;
 
   const change = d.equity - d.birth_equity, st = d.stats || {};
-  countUp($("equity"), d.equity, v => usd(v), shownEquity ?? (firstRender ? d.birth_equity : null));
+  countUp($("equity"), d.equity, v => usd(v) + " USDT", shownEquity ?? (firstRender ? d.birth_equity : null));
   shownEquity = d.equity;
   $("change").innerHTML = `<span class="${plClass(change)}">${usd(change, true)} (${pct(change / d.birth_equity)}) since birth</span> · ${d.mode === "paper" ? "practice money (paper mode)" : "REAL money"}`;
   $("start").textContent = usd(d.birth_equity);
