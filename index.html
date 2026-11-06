@@ -326,7 +326,7 @@ section[id] { scroll-margin-top: 16px; }
 
   <section class="card reveal span-2">
     <h2>Risk radar</h2>
-    <p class="sub">Every hour the bot reads the whole market and its own form, and decides how much risk to take. It changes the size of new trades by itself and goes back to normal by itself; open trades always keep their stop-losses.</p>
+    <p class="sub">Every hour the bot reads the whole market and its own form, and decides how much risk to take. In a falling market it makes new spot trades (trend, grid, DEX, pump.fun) smaller, because they can only buy; futures stay full size because they can also short. It goes back to normal by itself; open trades always keep their stop-losses.</p>
     <div class="tiles" id="radarTiles"></div>
     <div id="radarReadings" class="small" style="margin-top:10px"></div>
     <h3>The bot's own review of its trades</h3>
@@ -768,7 +768,7 @@ function renderRadar() {
   else {
     $("radarTiles").innerHTML = [
       ["Market state", `<span style="color:var(${color[r.state] || "--text-primary"})">${esc(label[r.state] || r.state)}</span>`],
-      ["New trades", `${Math.round((r.scale ?? 1) * 100)}% of normal size`],
+      ["New trades", `${Math.round((r.scale ?? 1) * 100)}% of normal size` + ((data.radar_full_size || []).length ? `<div class="small">${(data.radar_full_size).map(s => esc(NAMES[s] || s)).join(", ")}: always full size</div>` : "")],
       ["In this state since", ago(r.since)], ["Checked", ago(r.at)],
     ].map(([l, v]) => `<div class="tile"><div class="label">${l}</div><div class="value" style="font-size:15px">${v}</div></div>`).join("");
     const names = {btc_trend: "Bitcoin trend", breadth: "Market breadth", volatility: "Volatility", crash: "Crash check",
